@@ -97,7 +97,7 @@ const sketch = (p: p5) => {
    p.windowResized = () => {
       p.resizeCanvas(p.windowWidth, p.windowHeight);
       // reset the grid
-      grid = new Grid(0, 0, b.width, b.height, 30, 40);
+      grid = new Grid(0, 0, b.width, b.height, 30);
    };
 
    p.mouseClicked = () => {
