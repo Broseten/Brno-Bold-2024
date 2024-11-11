@@ -2,23 +2,27 @@ import p5, { Vector } from 'p5';
 import '../css/style.css';
 import { FlowCalculator, copyImage, same } from './flow';
 import { Grid } from './grid';
+import { Sphere } from './sphere';
 
 /// Parameters
 // TODO settings/parameters in a menu that gets displayed on button press -- move FPS and video debug there as well
 //      - only show certain parameters
 //      - extract all parameters and constants from the whole system (e.g. from the circle class)
 
-let globalMovementTresholdMultiplier = 0.007;
+// this has to be adjusted according to the expected size of the area where people will move -- the lower to less movement needed
+let globalMovementTresholdMultiplier = 0.005;
 let secondsToNextGlobalMoveEvent = 5;
 
 let blackColor: p5.Color;
 let redColor: p5.Color;
 
+let backgroundAlpha = 8;
+
 
 /// Data variables
 
 // Off-screen buffer for proper fading to black
-let b: p5.Graphics;
+let screenBuffer: p5.Graphics;
 // Calculated flow for entire image
 let flow: FlowCalculator;
 // Copy of previous frame
@@ -34,21 +38,28 @@ let lastMoveEventTimeMillis = 0;
 
 let grid: Grid;
 
+let spheres: Sphere[] = [];
+
+let textBuffer: p5.Graphics;
+
 // enum Mode {
 //    Flow,
 //    Brightness,
 //    None
 // }
 
+let debug = true;
+
 // let mode: Mode = Mode.Flow;
 
 const sketch = (p: p5) => {
 
    p.setup = () => {
-      p.createCanvas(p.windowWidth, p.windowHeight);
-      b = p.createGraphics(p.width, p.height); // Create an off-screen buffer
+      p.createCanvas(p.windowWidth, p.windowHeight, p.WEBGL);
+      // Create off-screen buffers
+      screenBuffer = p.createGraphics(p.width, p.height);
+      textBuffer = p.createGraphics(p.width, p.height);
 
-      // TODO how to handle different display resolution compared to the camera (will look weird now when just scaled)
       video = p.createCapture((p as any).VIDEO);
       video.size(640, 480); // should match the grid sampling size somehow, but not neccessary I guess
       video.hide();
@@ -58,7 +69,19 @@ const sketch = (p: p5) => {
 
       // Set up the grid of circles
       let gridSpacing = 42;
-      grid = new Grid(0, 0, b.width, b.height, gridSpacing);
+      grid = new Grid(0, 0, screenBuffer.width, screenBuffer.height, gridSpacing);
+
+      // TODO parameter
+      const sphereCount = 5;
+      // init spheres
+      for (let i = 0; i < sphereCount; i++) {
+         const sizeRange = new Vector(p.random(50, 80), p.random(80, 100));
+         const startPosition = new Vector(p.random(p.width), p.random(p.height));
+         const moveSpeed = p.random(1, 3);
+         const rotationSpeed = p.random(0.01, 0.03);
+         const sizeChangeSpeed = p.random(0.1, 0.5);
+         spheres.push(new Sphere(p, sizeRange, startPosition, moveSpeed, rotationSpeed, sizeChangeSpeed));
+      }
 
       blackColor = p.color(0, 0, 0);
       redColor = p.color(255, 0, 0);
@@ -67,7 +90,7 @@ const sketch = (p: p5) => {
    p.draw = () => {
       let [c1, c2] = changeColorScheme();
 
-      (b as any).background(p.red(c1), p.green(c1), p.blue(c1), 10);
+      (screenBuffer as any).background(p.red(c1), p.green(c1), p.blue(c1), backgroundAlpha);
 
       flowGrid();
       // switch (+mode) {
@@ -81,40 +104,63 @@ const sketch = (p: p5) => {
       //       break;
       // }
 
-      (b as any).noStroke();
-      (b as any).fill(c2);
-      grid.draw(b);
+      (screenBuffer as any).noStroke();
+      (screenBuffer as any).fill(c2);
+      grid.draw(screenBuffer);
 
       p.push();
+      // translate to correct position - WEBGL or not we need some translation
+      p.translate(0.5 * p.width, -0.5 * p.height);
       // Mirror everything
-      p.translate(p.width, 0);
       p.scale(-1, 1);
       // Draw the buffer onto the main canvas
-      p.image(b, 0, 0, p.width, p.height);
+      p.image(screenBuffer, 0, 0, p.width, p.height);
       p.pop();
 
-      p.fill(255);
-      let fps = p.frameRate();
-      p.text("FPS " + Math.floor(fps), 50, 50);
+      spheres.forEach((sphere) => {
+         sphere.update();
+         sphere.draw();
+
+         spheres.forEach((other) => {
+            if (sphere !== other) {
+               sphere.collide(other)
+            }
+         });
+      });
+
+      if (debug) {
+         debugStuff();
+         // the text buffer can be used for text in the future, for now, it is just for debug text
+         p.image(textBuffer, -p.width / 2, -p.height / 2, p.width, p.height);
+      }
    };
 
    p.windowResized = () => {
       p.resizeCanvas(p.windowWidth, p.windowHeight);
       // reset the grid
-      grid = new Grid(0, 0, b.width, b.height, 30);
+      grid = new Grid(0, 0, screenBuffer.width, screenBuffer.height, 30);
    };
 
    p.keyReleased = () => {
-      if (p.key == " ") switchColors();
+      if (p.key === "d") debug = !debug;
+      else if (p.key === " ") switchColors();
       // TODO add debug menu - ideally HTML popup window?
    };
 
    // function brightnessGrid() {
    //    (video as any).loadPixels();
    //    if ((video as any).pixels.length > 0) {
-         
+
    //    }
    // }
+
+   function debugStuff() {
+      (textBuffer as any).clear();
+      (textBuffer as any).fill(255);
+      (textBuffer as any).textSize(16);
+      (textBuffer as any).textAlign(p.LEFT, p.TOP);
+      (textBuffer as any).text(`FPS: ${Math.floor(p.frameRate())}`, 10, 10);
+   }
 
    function flowGrid() {
       (video as any).loadPixels();
@@ -129,9 +175,7 @@ const sketch = (p: p5) => {
 
          // If flow zones have been found, display them
          if (flow.zones && flow.zones[0]) {
-            // console.log(`Should: ${estFlowH * estFlowW} Got: ${flow.zones.length}`);
             let globalMovement = grid.update(p, flow.zones);
-
             checkGlobalFlowEvent(globalMovement);
          }
 
@@ -152,6 +196,7 @@ const sketch = (p: p5) => {
       return colors;
    }
 
+   // Detects movement spikes
    function checkGlobalFlowEvent(globalMovement: number) {
       // TODO adjust the thershold according to the time? If nothing happend for more then a few minutes, than make the threshold really low
       //      if something just happened make the threshold high (map between two thresolds based on time)

@@ -24,5 +24,6 @@ export class Circle {
       let circleSizeOffsetVectorRatio = 3;
       // can draw something else if we want
       (b as any).circle(this.position.x + this.offset.x, this.position.y + this.offset.y, this.offset.mag() / circleSizeOffsetVectorRatio);
+      // TODO here can happen something cool if we get certain offset etc.
    }
 }
