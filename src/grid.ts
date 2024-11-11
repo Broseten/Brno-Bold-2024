@@ -26,7 +26,10 @@ export class Grid {
       }
    }
 
-   public update(p: p5, flowZones: FlowZone[][]): void {
+   // Returns the global movement -- that is the total sum of magnitudes of all flows in the image
+   public update(p: p5, flowZones: FlowZone[][]): number {
+      let globalMovement = 0;
+
       // Dimensions of the flow zone grid
       const flowZoneRows = flowZones.length;
       const flowZoneCols = flowZones[0]?.length || 0;
@@ -67,9 +70,11 @@ export class Grid {
             );
 
             // TODO scaling value as parameter
-            circle.offset = interpolatedOffset.mult(2);
+            globalMovement += interpolatedOffset.mag();
+            circle.update(interpolatedOffset);
          });
       });
+      return globalMovement;
    }
 
 
