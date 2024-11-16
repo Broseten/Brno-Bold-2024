@@ -8,6 +8,10 @@ import { Sphere } from './sphere';
 // TODO: Add settings/parameters to a menu displayed on button press.
 //       Move FPS and video debug there as well and only show certain parameters.
 
+// Camera
+const CAMERA_X_RESOLUTION = 640;
+const CAMERA_Y_RESOLUTION = 480;
+
 // Global movement detection
 // Adjusts movement sensitivity based on the expected size of the area where people will move.
 // -- the lower to less movement needed (more sensitive)
@@ -77,6 +81,8 @@ let globalMovement = -1;
 
 let debug = false;
 
+let paused = false;
+
 const sketch = (p: p5) => {
    p.setup = () => {
       p.createCanvas(p.windowWidth, p.windowHeight, p.WEBGL);
@@ -84,9 +90,7 @@ const sketch = (p: p5) => {
       screenBuffer = p.createGraphics(p.width, p.height);
       textBuffer = p.createGraphics(p.width, p.height);
 
-      video = p.createCapture((p as any).VIDEO);
-      video.size(640, 480); // Should match the grid sampling size somehow, but not necessary.
-      video.hide();
+      startCapture();
 
       // Set up flow calculator.
       flow = new FlowCalculator(SAMPLING_GRID_SIZE);
@@ -112,6 +116,17 @@ const sketch = (p: p5) => {
    };
 
    p.draw = () => {
+      if (paused) {
+         p.background(0);
+         (textBuffer as any).clear();
+         (textBuffer as any).fill(255);
+         (textBuffer as any).textSize(16);
+         (textBuffer as any).textAlign(p.CENTER, p.CENTER);
+         (textBuffer as any).text("paused", p.width / 2, p.height / 4);
+         p.image(textBuffer, -p.width / 2, -p.height / 2, p.width, p.height);
+         return;
+      }
+
       let [c1, c2] = changeColorScheme();
 
       (screenBuffer as any).background(p.red(c1), p.green(c1), p.blue(c1), BACKGROUND_ALPHA);
@@ -159,7 +174,25 @@ const sketch = (p: p5) => {
    p.keyReleased = () => {
       if (p.key === 'd') debug = !debug;
       else if (p.key === ' ') switchColors();
+      else if (p.key == 'p') {
+         if (paused) {
+            startCapture();
+         } else {
+            stopCapture();
+         }
+         paused = !paused;
+      }
    };
+
+   function startCapture() {
+      video = p.createCapture((p as any).VIDEO);
+      video.size(CAMERA_X_RESOLUTION, CAMERA_Y_RESOLUTION); // Should match the grid sampling size somehow, but not necessary.
+      video.hide();
+   }
+
+   function stopCapture() {
+      video.remove();
+   }
 
    function debugStuff() {
       (textBuffer as any).clear();
