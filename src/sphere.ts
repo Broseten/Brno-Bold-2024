@@ -1,5 +1,23 @@
 import p5, { Vector } from "p5";
 
+// TODO move to the other file and pass it or export it
+// The minimum value by which the alpha (opacity) can increase during flickering.
+const ALPHA_INCREASE_MIN = 0;
+// The maximum value by which the alpha (opacity) can increase during flickering.
+const ALPHA_INCREASE_MAX = 40;
+// The rate at which alpha decreases when there is minimal activity or flow.
+const ALPHA_DECREASE_SLOW = 0.99;
+// The rate at which alpha decreases when there is significant activity or flow.
+const ALPHA_DECREASE_FAST = 0.8;
+// Multiplier to scale the impact of flow vector magnitude on the alpha (opacity).
+const ALPHA_FLOW_MULTIPLIER = 2.5;
+// Multiplier to adjust the influence of the flow vector on the direction of the sphere.
+// const DIRECTION_FLOW_MULTIPLIER = 0.1;
+// Divisor to reduce the flow vector magnitude when calculating its effect on movement speed.
+const FLOW_SPEED_DIVISOR = 4;
+// Offset added to the sphere size when wrapping around the screen edges to prevent visual popping.
+const EDGE_WRAP_OFFSET = 5;
+
 export class Sphere {
    size: number = 0;
    position: Vector;
@@ -29,27 +47,27 @@ export class Sphere {
       if (this.alpha < 1) {
          // make the spheres flicker when noone's around
          // flicker only sometime (0.5 chance that nothing will happen)
-         this.alpha += p.map(p.random(), 0.5, 1, 0, 40);
+         this.alpha += p.map(p.random(), 0.5, 1, ALPHA_INCREASE_MIN, ALPHA_INCREASE_MAX);
          // decrease slower
-         this.alpha *= 0.99;
+         this.alpha *= ALPHA_DECREASE_SLOW;
       } else {
          // decrease faster
-         this.alpha *= 0.8;
+         this.alpha *= ALPHA_DECREASE_FAST;
       }
       // add movement to the alpha
-      this.alpha += flowVec.magSq() * 2.5;
+      this.alpha += flowVec.magSq() * ALPHA_FLOW_MULTIPLIER;
 
       // add the flow to the direction
-      // if (flowVec.magSq() > 10) this.direction.add(flowVec.copy().mult(0.1)).normalize();
+      // if (flowVec.magSq() > 10) this.direction.add(flowVec.copy().mult(DIRECTION_FLOW_MULTIPLIER)).normalize();
       let speed = this.moveSpeed;
       // affect the speed by the flow
-      speed *= Math.max(flowVec.magSq() / 4, 1);
+      speed *= Math.max(flowVec.magSq() / FLOW_SPEED_DIVISOR, 1);
       // Move sphere
       const velocity = this.direction.copy().mult(speed);
       this.position.add(velocity);
 
       // Wrap around edges (hide behind offset to prevent popping)
-      const offset = this.size + 5;
+      const offset = this.size + EDGE_WRAP_OFFSET;
       if (this.position.x + offset < 0) this.position.x = p.width + offset;
       if (this.position.x - offset > p.width) this.position.x = - offset;
       if (this.position.y + offset < 0) this.position.y = p.height + offset;
@@ -102,5 +120,4 @@ export class Sphere {
          other.position.sub(separation);
       }
    }
-
 }
