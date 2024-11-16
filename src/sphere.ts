@@ -4,6 +4,8 @@ export class Sphere {
    size: number = 0;
    position: Vector;
    direction: Vector;
+   private alpha: number = 255;
+   private alphaChange = 0; 
 
    constructor(
       public p: p5,
@@ -17,14 +19,24 @@ export class Sphere {
       this.direction = Vector.random2D();
    }
 
-   public update() {
+   public update(flowVec: p5.Vector) {
       const p = this.p;
 
       // Update size oscillation
       this.size = p.map(Math.sin(p.millis() * this.sizeChangeSpeed * 0.001), -1, 1, this.sizeRange.x, this.sizeRange.y);
 
+      // affect visibility
+      this.alphaChange += flowVec.magSq() * 2;
+      this.alphaChange *= 0.8;
+      this.alpha = this.alphaChange;
+
+      // add the flow to the direction
+      // if (flowVec.magSq() > 10) this.direction.add(flowVec.copy().mult(0.1)).normalize();
+      let speed = this.moveSpeed;
+      // affect the speed by the flow
+      speed *= Math.max(flowVec.magSq() / 4, 1);
       // Move sphere
-      const velocity = this.direction.copy().mult(this.moveSpeed);
+      const velocity = this.direction.copy().mult(speed);
       this.position.add(velocity);
 
       // Wrap around edges (hide behind offset to prevent popping)
@@ -40,7 +52,7 @@ export class Sphere {
 
       p.push();
       p.noFill();
-      p.stroke(180);
+      p.stroke(180, this.alpha);
 
       // Translate to the sphere's position
       // TODO set sphere z to avoid hiding half of it behind the black background?

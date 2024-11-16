@@ -10,13 +10,13 @@ import { Sphere } from './sphere';
 //      - extract all parameters and constants from the whole system (e.g. from the circle class)
 
 // this has to be adjusted according to the expected size of the area where people will move -- the lower to less movement needed
-let globalMovementTresholdMultiplier = 0.005;
-let secondsToNextGlobalMoveEvent = 5;
+const globalMovementTresholdMultiplier = 0.005;
+const secondsToNextGlobalMoveEvent = 5;
 
 let blackColor: p5.Color;
 let redColor: p5.Color;
 
-let backgroundAlpha = 8;
+const backgroundAlpha = 8;
 
 
 /// Data variables
@@ -41,6 +41,8 @@ let grid: Grid;
 let spheres: Sphere[] = [];
 
 let textBuffer: p5.Graphics;
+
+let globalMovement = -1;
 
 // enum Mode {
 //    Flow,
@@ -77,7 +79,7 @@ const sketch = (p: p5) => {
       for (let i = 0; i < sphereCount; i++) {
          const sizeRange = new Vector(p.random(50, 80), p.random(80, 100));
          const startPosition = new Vector(p.random(p.width), p.random(p.height));
-         const moveSpeed = p.random(1, 3);
+         const moveSpeed = p.random(1, 4);
          const rotationSpeed = p.random(0.01, 0.03);
          const sizeChangeSpeed = p.random(0.1, 0.5);
          spheres.push(new Sphere(p, sizeRange, startPosition, moveSpeed, rotationSpeed, sizeChangeSpeed));
@@ -118,7 +120,8 @@ const sketch = (p: p5) => {
       p.pop();
 
       spheres.forEach((sphere) => {
-         sphere.update();
+         // mirror the flow in x
+         sphere.update(new Vector(flow.u ? -flow.u : 0, flow.v ? flow.v : 0));
          sphere.draw();
 
          spheres.forEach((other) => {
@@ -175,8 +178,8 @@ const sketch = (p: p5) => {
 
          // If flow zones have been found, display them
          if (flow.zones && flow.zones[0]) {
-            let globalMovement = grid.update(p, flow.zones);
-            checkGlobalFlowEvent(globalMovement);
+            globalMovement = grid.update(p, flow.zones);
+            checkGlobalFlowEvent();
          }
 
          // Copy the current pixels into previous for the next frame
@@ -197,12 +200,8 @@ const sketch = (p: p5) => {
    }
 
    // Detects movement spikes
-   function checkGlobalFlowEvent(globalMovement: number) {
-      // TODO adjust the thershold according to the time? If nothing happend for more then a few minutes, than make the threshold really low
-      //      if something just happened make the threshold high (map between two thresolds based on time)
-      let threshold = globalMovementTresholdMultiplier * grid.width * grid.height;
-      // TODO tweak the values so that it makes sense according to the portion of the camera
-      if (globalMovement > threshold) {
+   function checkGlobalFlowEvent() {
+      if (isGlobalMovementTresholdExceeded()) {
          let nextSwitch = lastMoveEventTimeMillis + 1000 * secondsToNextGlobalMoveEvent;
          if (p.millis() > nextSwitch) {
             lastMoveEventTimeMillis = p.millis();
@@ -222,6 +221,13 @@ const sketch = (p: p5) => {
       colorScheme = (colorScheme + 1) % 2;
    }
 };
+
+export function isGlobalMovementTresholdExceeded() {
+   // TODO adjust the thershold according to the time? If nothing happend for more then a few minutes, than make the threshold really low
+   //      if something just happened make the threshold high (map between two thresolds based on time)
+   // TODO tweak the values so that it makes sense according to the portion of the camera
+   return globalMovement > (globalMovementTresholdMultiplier * grid.width * grid.height);
+}
 
 // New p5 instance
 new p5(sketch);
