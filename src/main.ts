@@ -8,7 +8,7 @@ import { Sphere } from './sphere';
 // TODO: Add settings/parameters to a menu displayed on button press.
 //       Move FPS and video debug there as well and only show certain parameters.
 
-// Camera
+// Camera (for flow detection)
 const CAMERA_X_RESOLUTION = 640;
 const CAMERA_Y_RESOLUTION = 480;
 
@@ -51,6 +51,7 @@ const SPHERE_ROTATION_SPEED_MAX = 0.03;
 const SPHERE_SIZE_CHANGE_SPEED_MIN = 0.1;
 // Maximum size oscillation speed.
 const SPHERE_SIZE_CHANGE_SPEED_MAX = 0.5;
+
 
 /// Data variables
 
@@ -174,6 +175,7 @@ const sketch = (p: p5) => {
    p.keyReleased = () => {
       if (p.key === 'd') debug = !debug;
       else if (p.key === ' ') switchColors();
+      else if (p.key === 'r') p.setup();
       else if (p.key == 'p') {
          if (paused) {
             startCapture();
