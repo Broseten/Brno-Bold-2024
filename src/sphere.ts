@@ -4,8 +4,7 @@ export class Sphere {
    size: number = 0;
    position: Vector;
    direction: Vector;
-   private alpha: number = 255;
-   private alphaChange = 0; 
+   private alpha = 0;
 
    constructor(
       public p: p5,
@@ -23,12 +22,22 @@ export class Sphere {
       const p = this.p;
 
       // Update size oscillation
-      this.size = p.map(Math.sin(p.millis() * this.sizeChangeSpeed * 0.001), -1, 1, this.sizeRange.x, this.sizeRange.y);
+      const sizeOsc = Math.sin(p.millis() * this.sizeChangeSpeed * 0.001);
+      this.size = p.map(sizeOsc, -1, 1, this.sizeRange.x, this.sizeRange.y);
 
       // affect visibility
-      this.alphaChange += flowVec.magSq() * 2;
-      this.alphaChange *= 0.8;
-      this.alpha = this.alphaChange;
+      if (this.alpha < 1) {
+         // make the spheres flicker when noone's around
+         // flicker only sometime (0.5 chance that nothing will happen)
+         this.alpha += p.map(p.random(), 0.5, 1, 0, 40);
+         // decrease slower
+         this.alpha *= 0.99;
+      } else {
+         // decrease faster
+         this.alpha *= 0.8;
+      }
+      // add movement to the alpha
+      this.alpha += flowVec.magSq() * 2.5;
 
       // add the flow to the direction
       // if (flowVec.magSq() > 10) this.direction.add(flowVec.copy().mult(0.1)).normalize();
@@ -52,7 +61,7 @@ export class Sphere {
 
       p.push();
       p.noFill();
-      p.stroke(180, this.alpha);
+      p.stroke(255, this.alpha);
 
       // Translate to the sphere's position
       // TODO set sphere z to avoid hiding half of it behind the black background?

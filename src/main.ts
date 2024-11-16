@@ -50,7 +50,7 @@ let globalMovement = -1;
 //    None
 // }
 
-let debug = true;
+let debug = false;
 
 // let mode: Mode = Mode.Flow;
 
