@@ -5,6 +5,17 @@ import { Grid } from './grid';
 import { Sphere } from './sphere';
 import { GridCellMode } from './grid_cell';
 
+
+const MOVEMENT_DETECTION_TRESHOLD_COOKIE = "globalMoveTreshValue";
+
+// Global movement detection
+// Adjusts movement sensitivity based on the expected size of the area where people will move.
+// TODO adjust the thershold (add another multiplier?) according to the time?
+//      If nothing happend for more then a few minutes, than make the threshold really low
+//      if something just happened make the threshold high (map between two thresolds based on time)
+// This is set from the settings window in the sketch
+let globalMoveSensitivity = 70; // Default value
+
 /// Parameters
 // TODO: Add settings/parameters to a menu displayed on button press.
 //       Move FPS and video debug there as well and only show certain parameters.
@@ -13,15 +24,6 @@ import { GridCellMode } from './grid_cell';
 const CAMERA_X_RESOLUTION = 640;
 const CAMERA_Y_RESOLUTION = 480;
 
-// Global movement detection
-// Adjusts movement sensitivity based on the expected size of the area where people will move.
-// -- the lower to less movement needed (more sensitive)
-// TODO tweak the values so that it makes sense according to the portion of the camera
-// TODO add debug menu for that - ideally HTML popup window? so that we can easily tweak in a runtime build (save cookie or something so that the tweak is persistent)
-// TODO adjust the thershold (add another multiplier?) according to the time?
-//      If nothing happend for more then a few minutes, than make the threshold really low
-//      if something just happened make the threshold high (map between two thresolds based on time)
-const GLOBAL_MOVEMENT_THRESHOLD_MULTIPLIER = 0.003;
 // Cooldown for movement-triggered events.
 const SECONDS_TO_NEXT_GLOBAL_MOVE_EVENT = 3;
 
@@ -101,8 +103,13 @@ let paused = false;
 
 let spheresInverseAlpha = false;
 
+let settingsVisible = false;
+
 const sketch = (p: p5) => {
    p.setup = () => {
+      initCookiesValue();
+      setupSettingsModal();
+
       p.createCanvas(p.windowWidth, p.windowHeight, p.WEBGL);
       // Create off-screen buffers.
       screenBuffer = p.createGraphics(p.width, p.height);
@@ -208,12 +215,16 @@ const sketch = (p: p5) => {
    };
 
    p.keyReleased = () => {
-      if (p.key === 'd') debug = !debug;
-      else if (p.key === 'c') changeColorScheme();
-      else if (p.key === 's') changeSphereAlphaMode();
-      else if (p.key === ' ') switchMode();
-      else if (p.key === 'r') p.setup();
-      else if (p.key == 'p') {
+      const key = p.key.toLowerCase();
+      if (key === 'd') debug = !debug;
+      else if (key === 'c') changeColorScheme();
+      else if (key === 'a') changeSphereAlphaMode();
+      else if (key === ' ') switchMode();
+      else if (key === 'r') p.setup();
+      else if (key == 's') {
+         toggleModal();
+      }
+      else if (key == 'p') {
          if (paused) {
             startCapture();
          } else {
@@ -269,7 +280,7 @@ const sketch = (p: p5) => {
    }
 
    function checkGlobalFlowEvent() {
-      if (isGlobalMovementThresholdExceeded()) {
+      if (isGlobalMovementThresholdExceeded(p)) {
          let nextSwitch = lastMoveEventTimeMillis + 1000 * SECONDS_TO_NEXT_GLOBAL_MOVE_EVENT;
          if (p.millis() > nextSwitch) {
             lastMoveEventTimeMillis = p.millis();
@@ -304,8 +315,61 @@ const sketch = (p: p5) => {
    }
 };
 
-export function isGlobalMovementThresholdExceeded() {
-   return globalMovement > (GLOBAL_MOVEMENT_THRESHOLD_MULTIPLIER * grid.width * grid.height);
+export function isGlobalMovementThresholdExceeded(p: p5) {
+   // range from 1 to 100
+   const threshold = 101 - globalMoveSensitivity;
+   const thresholdMultiplier = p.map(threshold, 1, 100, 0.001, 0.008);
+   return globalMovement > (thresholdMultiplier * grid.width * grid.height);
+}
+
+// Function to read cookies
+function readCookie(name: string): number | null {
+   const match = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'));
+   return match ? parseInt(match[2], 10) : null;
+}
+
+// Function to write cookies
+function writeCookie(name: string, value: number, days: number) {
+   const date = new Date();
+   date.setTime(date.getTime() + days * 24 * 60 * 60 * 1000);
+   document.cookie = `${name}=${value}; expires=${date.toUTCString()}; path=/`;
+}
+
+// Function to toggle modal visibility
+function toggleModal() {
+   settingsVisible = !settingsVisible;
+   const modal = document.getElementById('settings-modal')!;
+   modal.style.display = settingsVisible ? 'block' : 'none';
+}
+
+// Set up event listeners for the modal
+function setupSettingsModal() {
+   const slider = document.getElementById('parameter-slider') as HTMLInputElement;
+   const valueDisplay = document.getElementById('slider-value')!;
+   const closeButton = document.getElementById('close-modal')!;
+   slider.value = globalMoveSensitivity.toString();
+
+   // Initialize slider and display with the saved value
+   slider.value = globalMoveSensitivity.toString();
+   valueDisplay.textContent = globalMoveSensitivity.toString();
+
+   slider.addEventListener('input', () => {
+      globalMoveSensitivity = parseInt(slider.value, 10);
+      valueDisplay.textContent = globalMoveSensitivity.toString();
+      writeCookie(MOVEMENT_DETECTION_TRESHOLD_COOKIE, globalMoveSensitivity, 7); // Save value for 7 days
+   });
+
+   closeButton.addEventListener('click', () => {
+      toggleModal();
+   });
+}
+
+// Initialize parameter value from cookies
+function initCookiesValue() {
+   const cookieValue = readCookie(MOVEMENT_DETECTION_TRESHOLD_COOKIE);
+   if (cookieValue !== null) {
+      globalMoveSensitivity = cookieValue;
+   }
 }
 
 // New p5 instance

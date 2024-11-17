@@ -1,6 +1,105 @@
 /* Hide scrollbars */
 body {
-    margin: 0;
-    overflow: hidden;
-  }
-  
+  margin: 0;
+  overflow: hidden;
+}
+
+#settings-modal {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  background: black;
+  color: white;
+  padding: 20px;
+  margin: 20px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  border-radius: 10px;
+  font-family: Arial, sans-serif;
+}
+
+#settings-modal label {
+  font-size: 18px;
+}
+
+#parameter-slider {
+  width: 100%;
+  margin: 10px 0;
+  accent-color: red;
+}
+
+#parameter-slider::-webkit-slider-thumb {
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  background: red;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  margin-top: -5px;
+}
+
+#parameter-slider::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  background: red;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+#parameter-slider::-webkit-slider-runnable-track {
+  height: 6px;
+  background: white;
+  border-radius: 3px;
+}
+
+#parameter-slider::-moz-range-track {
+  height: 6px;
+  background: white;
+  border-radius: 3px;
+}
+
+#parameter-slider::-ms-thumb {
+  width: 20px;
+  height: 20px;
+  background: red;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+#parameter-slider::-ms-track {
+  height: 6px;
+  background: transparent;
+  border-color: transparent;
+  color: transparent;
+}
+
+#parameter-slider::-ms-fill-lower,
+#parameter-slider::-ms-fill-upper {
+  height: 6px;
+  background: white;
+  border-radius: 3px;
+}
+
+#close-modal {
+  background: white;
+  color: black;
+  border: none;
+  padding: 5px 10px;
+  cursor: pointer;
+  font-size: 16px;
+  border-radius: 5px;
+  transition: background 0.3s, color 0.3s;
+}
+
+#close-modal:hover {
+  background: red;
+  color: white;
+}
+
+#slider-value {
+  font-size: 18px;
+  margin-left: 10px;
+}
