@@ -71,6 +71,7 @@ let gridMode = GridCellMode.Circle;
 
 let blackColor: p5.Color;
 let redColor: p5.Color;
+let colorScheme: p5.Color[];
 
 // Off-screen buffer for proper fading to black.
 let screenBuffer: p5.Graphics;
@@ -80,8 +81,6 @@ let flow: FlowCalculator;
 let previousPixels: Uint8ClampedArray | null;
 let video: p5.Element;
 
-// Dumb but simple 0 or 1 (used for color schemes).
-let colorScheme = 0;
 // Last recorded time of a movement-triggered event in milliseconds.
 let lastMoveEventTimeMillis = 0;
 
@@ -137,6 +136,7 @@ const sketch = (p: p5) => {
 
       blackColor = p.color(0, 0, 0);
       redColor = p.color(255, 0, 0);
+      colorScheme = [blackColor, redColor];
    };
 
    p.draw = () => {
@@ -151,7 +151,7 @@ const sketch = (p: p5) => {
          return;
       }
 
-      let [backgroundColor, mainColor] = changeColorScheme();
+      let [backgroundColor, mainColor] = colorScheme;
 
       let ba = BACKGROUND_ALPHA;
       if (gridMode === GridCellMode.Letter || gridMode === GridCellMode.SquareCircle) {
@@ -204,7 +204,7 @@ const sketch = (p: p5) => {
 
    p.keyReleased = () => {
       if (p.key === 'd') debug = !debug;
-      else if (p.key === 'c') switchColors();
+      else if (p.key === 'c') changeColorScheme();
       else if (p.key === ' ') switchMode();
       else if (p.key === 'r') p.setup();
       else if (p.key == 'p') {
@@ -255,15 +255,11 @@ const sketch = (p: p5) => {
    }
 
    function changeColorScheme() {
-      let colors = [blackColor, redColor];
-      switch (colorScheme) {
-         case 1:
-            colors = [redColor, blackColor];
-            break;
-         default:
-            break;
-      }
-      return colors;
+      colorScheme = colorScheme.reverse();
+   }
+
+   function randomColorScheme() {
+      colorScheme = colorScheme.sort(() => p.random());
    }
 
    function checkGlobalFlowEvent() {
@@ -280,15 +276,11 @@ const sketch = (p: p5) => {
       // will randomize the original array...whatever
       allowedModes.sort(() => p.random());
       nextGridCellMode();
-      switchColors();
+      randomColorScheme();
    }
 
    function switchMode() {
       nextGridCellMode();
-   }
-
-   function switchColors() {
-      colorScheme = (colorScheme + 1) % 2;
    }
 
    function nextGridCellMode() {

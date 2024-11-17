@@ -10,7 +10,7 @@ const SENSITIVITY = 1.8;
 const OFFSET_REDUCTION_SPEED = 0.8;
 // Determines the circle/square size based on offset magnitude
 const ELEMENT_SIZE_MULTIPLIER = 9;
-const TEXT_SIZE_MULTIPLIER = 2.5;
+const TEXT_SIZE_MULTIPLIER = 3;
 const SQUARE_ROTATION_MULTIPLIER = 0.03;
 const CIRCLESQUARE_ROTATION_MULTIPLIER = 0.006;
 
