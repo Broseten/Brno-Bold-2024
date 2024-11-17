@@ -55,6 +55,8 @@ const SPHERE_SIZE_CHANGE_SPEED_MAX = 0.5;
 // IF true, spheres bounce of the edges. False, the wrap around.
 const SPHERE_BOUNCE = true;
 
+const SPHERE_ALLOW_RANDOMIZE_ALPHA_MODE = true;
+
 const allowedModes = [
    GridCellMode.Circle,
    GridCellMode.SquareSquare,
@@ -86,7 +88,7 @@ let lastMoveEventTimeMillis = 0;
 
 let grid: Grid;
 
-let spheres: Sphere[] = [];
+let spheres: Sphere[];
 
 let textBuffer: p5.Graphics;
 
@@ -96,6 +98,8 @@ let globalMovement = -1;
 let debug = false;
 
 let paused = false;
+
+let spheresInverseAlpha = false;
 
 const sketch = (p: p5) => {
    p.setup = () => {
@@ -118,6 +122,7 @@ const sketch = (p: p5) => {
       grid = new Grid(p, 0, 0, screenBuffer.width, screenBuffer.height, GRID_SPACING);
 
       // Initialize spheres.
+      spheres = [];
       for (let i = 0; i < SPHERE_COUNT; i++) {
          const relativeSizeRange = new Vector(
             ...[p.random(SPHERE_SIZE_RANGE_MIN, SPHERE_SIZE_RANGE_MAX),
@@ -179,8 +184,8 @@ const sketch = (p: p5) => {
 
       spheres.forEach((sphere) => {
          // Mirror the flow in x.
-         sphere.update(new Vector(flow.u ? -flow.u : 0, flow.v ? flow.v : 0), SPHERE_BOUNCE);
-         sphere.draw();
+         sphere.update(spheresInverseAlpha, new Vector(flow.u ? -flow.u : 0, flow.v ? flow.v : 0), SPHERE_BOUNCE);
+         sphere.draw(spheresInverseAlpha);
 
          spheres.forEach((other) => {
             if (sphere !== other) {
@@ -205,6 +210,7 @@ const sketch = (p: p5) => {
    p.keyReleased = () => {
       if (p.key === 'd') debug = !debug;
       else if (p.key === 'c') changeColorScheme();
+      else if (p.key === 's') changeSphereAlphaMode();
       else if (p.key === ' ') switchMode();
       else if (p.key === 'r') p.setup();
       else if (p.key == 'p') {
@@ -276,7 +282,14 @@ const sketch = (p: p5) => {
       // will randomize the original array...whatever
       allowedModes.sort(() => p.random());
       nextGridCellMode();
+      // randomize colors
       randomColorScheme();
+      // change the spheres behavior
+      if (SPHERE_ALLOW_RANDOMIZE_ALPHA_MODE) changeSphereAlphaMode();
+   }
+
+   function changeSphereAlphaMode() {
+      spheresInverseAlpha = p.random() < 0.5;
    }
 
    function switchMode() {
@@ -284,7 +297,9 @@ const sketch = (p: p5) => {
    }
 
    function nextGridCellMode() {
+      // return last
       allowedModes.push(gridMode);
+      // pick first
       gridMode = allowedModes.shift()!;
    }
 };

@@ -1,22 +1,20 @@
 import p5, { Vector } from "p5";
 
 // TODO move to the other file and pass it or export it
-// The minimum value by which the alpha (opacity) can increase during flickering.
-const ALPHA_INCREASE_MIN = 0;
 // The maximum value by which the alpha (opacity) can increase during flickering.
-const ALPHA_INCREASE_MAX = 40;
+const ALPHA_INCREASE_MAX = 120;
 // The rate at which alpha decreases when there is minimal activity or flow.
-const ALPHA_DECREASE_SLOW = 0.99;
+const ALPHA_DECREASE_SLOW = 0.995;
 // The rate at which alpha decreases when there is significant activity or flow.
 const ALPHA_DECREASE_FAST = 0.8;
 // Multiplier to scale the impact of flow vector magnitude on the alpha (opacity).
 const ALPHA_FLOW_MULTIPLIER = 2.5;
 // Multiplier to adjust the influence of the flow vector on the direction of the sphere.
 // const DIRECTION_FLOW_MULTIPLIER = 0.1;
-// Divisor to reduce the flow vector magnitude when calculating its effect on movement speed.
-const FLOW_SPEED_DIVISOR = 4;
 // Offset added to the sphere size when wrapping around the screen edges to prevent visual popping.
 const EDGE_WRAP_OFFSET = 5;
+
+const FLOW_SPEED_MULTIPLIER = 1;
 
 export class Sphere {
    size: number = 0;
@@ -35,39 +33,50 @@ export class Sphere {
       this.position = startPosition.copy();
       this.direction = Vector.random2D();
    }
-   
-   public update(flowVec: p5.Vector, shouldBounce: boolean) {
+
+   public update(spheresInverseAlpha: boolean, flowVec: p5.Vector, shouldBounce: boolean) {
       const p = this.p;
-   
+
       // Update size oscillation
       const sizeOsc = Math.sin(p.millis() * this.sizeChangeSpeed * 0.001);
       this.size = p.map(sizeOsc, -1, 1, this.sizeRange.x, this.sizeRange.y);
-   
+
+      this.alpha = Math.min(Math.max(this.alpha, 0), 255);
+
       // Affect visibility
       if (this.alpha < 1) {
          // Make the spheres flicker when no one's around
-         // Flicker only sometimes (0.5 chance that nothing will happen)
-         this.alpha += p.map(p.random(), 0.5, 1, ALPHA_INCREASE_MIN, ALPHA_INCREASE_MAX);
+         // Flicker only sometimes (0.52 chance that nothing will happen)
+         this.alpha += p.map(p.random(), 0.52, 1, 0, ALPHA_INCREASE_MAX);
          // Decrease slower
          this.alpha *= ALPHA_DECREASE_SLOW;
       } else {
-         // Decrease faster
-         this.alpha *= ALPHA_DECREASE_FAST;
+         if (spheresInverseAlpha) {
+            this.alpha *= ALPHA_DECREASE_SLOW;
+         } else {
+            // Decrease faster
+            this.alpha *= ALPHA_DECREASE_FAST;
+         }
       }
       // Add movement to the alpha
       this.alpha += flowVec.magSq() * ALPHA_FLOW_MULTIPLIER;
-   
+
       // Add the flow to the direction
       // if (flowVec.magSq() > 10) this.direction.add(flowVec.copy().mult(DIRECTION_FLOW_MULTIPLIER)).normalize();
       let speed = this.moveSpeed;
       // Affect the speed by the flow
-      speed *= Math.max(flowVec.magSq() / FLOW_SPEED_DIVISOR, 1);
+      if (spheresInverseAlpha) {
+         speed -= flowVec.mag() * FLOW_SPEED_MULTIPLIER;
+         speed = Math.max(speed, 0);
+      } else {
+         speed += flowVec.mag() * FLOW_SPEED_MULTIPLIER;
+      }
       // Move sphere
       const velocity = this.direction.copy().mult(speed);
       this.position.add(velocity);
-   
+
       const offset = this.size + EDGE_WRAP_OFFSET;
-   
+
       if (shouldBounce) {
          // Bounce off edges
          if (this.position.x - this.size < 0 || this.position.x + this.size > p.width) {
@@ -84,14 +93,14 @@ export class Sphere {
          if (this.position.y - offset > p.height) this.position.y = -offset;
       }
    }
-   
 
-   public draw() {
+
+   public draw(spheresInverseAlpha: boolean) {
       const p = this.p;
 
       p.push();
       p.noFill();
-      p.stroke(255, this.alpha);
+      p.stroke(255, spheresInverseAlpha ? Math.min(255, (255 - this.alpha) * 1.5) : this.alpha);
 
       // Translate to the sphere's position
       // TODO set sphere z to avoid hiding half of it behind the black background?
