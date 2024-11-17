@@ -35,10 +35,10 @@ const SAMPLING_GRID_SIZE = 16;
 const GRID_SPACING = 42;
 
 // Sphere parameters
-// Minimum sphere size.
-const SPHERE_SIZE_RANGE_MIN = 50;
-// Maximum sphere size.
-const SPHERE_SIZE_RANGE_MAX = 100;
+// Minimum sphere size -- relative to the smaller screen size dimension
+const SPHERE_SIZE_RANGE_MIN = 0.03;
+// Maximum sphere size  -- relative to the smaller screen size dimension
+const SPHERE_SIZE_RANGE_MAX = 0.15;
 // Minimum movement speed for spheres.
 const SPHERE_MOVE_SPEED_MIN = 1;
 // Maximum movement speed for spheres.
@@ -51,6 +51,8 @@ const SPHERE_ROTATION_SPEED_MAX = 0.03;
 const SPHERE_SIZE_CHANGE_SPEED_MIN = 0.1;
 // Maximum size oscillation speed.
 const SPHERE_SIZE_CHANGE_SPEED_MAX = 0.5;
+// IF true, spheres bounce of the edges. False, the wrap around.
+const SPHERE_BOUNCE = true;
 
 
 /// Data variables
@@ -101,15 +103,19 @@ const sketch = (p: p5) => {
 
       // Initialize spheres.
       for (let i = 0; i < SPHERE_COUNT; i++) {
-         const sizeRange = new Vector(
-            p.random(SPHERE_SIZE_RANGE_MIN, SPHERE_SIZE_RANGE_MAX),
-            p.random(SPHERE_SIZE_RANGE_MIN, SPHERE_SIZE_RANGE_MAX)
+         const relativeSizeRange = new Vector(
+            ...[p.random(SPHERE_SIZE_RANGE_MIN, SPHERE_SIZE_RANGE_MAX),
+            p.random(SPHERE_SIZE_RANGE_MIN, SPHERE_SIZE_RANGE_MAX)].sort((x, y) => x - y)
          );
-         const startPosition = new Vector(p.random(p.width), p.random(p.height));
+         const sizeRangePixels = relativeSizeRange.copy().mult(p.min(p.width, p.height));
+         const startPosition = new Vector(
+            p.random(sizeRangePixels.y, p.width - sizeRangePixels.y),
+            p.random(sizeRangePixels.y, p.height - sizeRangePixels.y)
+         );
          const moveSpeed = p.random(SPHERE_MOVE_SPEED_MIN, SPHERE_MOVE_SPEED_MAX);
          const rotationSpeed = p.random(SPHERE_ROTATION_SPEED_MIN, SPHERE_ROTATION_SPEED_MAX);
          const sizeChangeSpeed = p.random(SPHERE_SIZE_CHANGE_SPEED_MIN, SPHERE_SIZE_CHANGE_SPEED_MAX);
-         spheres.push(new Sphere(p, sizeRange, startPosition, moveSpeed, rotationSpeed, sizeChangeSpeed));
+         spheres.push(new Sphere(p, sizeRangePixels, startPosition, moveSpeed, rotationSpeed, sizeChangeSpeed));
       }
 
       blackColor = p.color(0, 0, 0);
@@ -149,7 +155,7 @@ const sketch = (p: p5) => {
 
       spheres.forEach((sphere) => {
          // Mirror the flow in x.
-         sphere.update(new Vector(flow.u ? -flow.u : 0, flow.v ? flow.v : 0));
+         sphere.update(new Vector(flow.u ? -flow.u : 0, flow.v ? flow.v : 0), SPHERE_BOUNCE);
          sphere.draw();
 
          spheres.forEach((other) => {

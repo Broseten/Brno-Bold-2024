@@ -1,10 +1,10 @@
 import p5 from "p5";
-import { Circle } from "./circle";
+import { GridCell } from "./grid_cell";
 import { FlowZone } from "./flow";
 
 export class Grid {
    // rows x columns
-   gridCircles: Circle[][] = [];
+   gridCells: GridCell[][] = [];
 
    constructor(
       public x: number,
@@ -18,10 +18,10 @@ export class Grid {
       // offset by half
       for (let row = 0; row < rows; row++) {
          let relY = gridCellSize / 2 + row * gridCellSize;
-         this.gridCircles[row] = [];
+         this.gridCells[row] = [];
          for (let col = 0; col < cols; col++) {
             let relX = gridCellSize / 2 + col * gridCellSize;
-            this.gridCircles[row][col] = new Circle(new p5.Vector(relX, relY));
+            this.gridCells[row][col] = new GridCell(new p5.Vector(relX, relY));
          }
       }
    }
@@ -34,11 +34,11 @@ export class Grid {
       const flowZoneRows = flowZones.length;
       const flowZoneCols = flowZones[0]?.length || 0;
 
-      this.gridCircles.forEach((row) => {
-         row.forEach((circle) => {
+      this.gridCells.forEach((row) => {
+         row.forEach((cell) => {
             // Map grid position to flow zone indices
-            let mappedX = p.map(circle.position.x, 0, this.width, 0, flowZoneCols);
-            let mappedY = p.map(circle.position.y, 0, this.height, 0, flowZoneRows);
+            let mappedX = p.map(cell.position.x, 0, this.width, 0, flowZoneCols);
+            let mappedY = p.map(cell.position.y, 0, this.height, 0, flowZoneRows);
 
             // Indices for the four surrounding zones
             let zoneColLeft = Math.floor(mappedX);
@@ -71,7 +71,7 @@ export class Grid {
 
             // TODO scaling value as parameter
             globalMovement += interpolatedOffset.mag();
-            circle.update(interpolatedOffset);
+            cell.update(interpolatedOffset);
          });
       });
       return globalMovement;
@@ -81,7 +81,7 @@ export class Grid {
    public draw(b: p5.Graphics): void {
       (b as any).push();
       (b as any).translate(this.x, this.y);
-      this.gridCircles.forEach((row) => {
+      this.gridCells.forEach((row) => {
          row.forEach((circle) => {
             circle.draw(b);
          });

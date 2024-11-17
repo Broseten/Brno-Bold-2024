@@ -35,44 +35,56 @@ export class Sphere {
       this.position = startPosition.copy();
       this.direction = Vector.random2D();
    }
-
-   public update(flowVec: p5.Vector) {
+   
+   public update(flowVec: p5.Vector, shouldBounce: boolean) {
       const p = this.p;
-
+   
       // Update size oscillation
       const sizeOsc = Math.sin(p.millis() * this.sizeChangeSpeed * 0.001);
       this.size = p.map(sizeOsc, -1, 1, this.sizeRange.x, this.sizeRange.y);
-
-      // affect visibility
+   
+      // Affect visibility
       if (this.alpha < 1) {
-         // make the spheres flicker when noone's around
-         // flicker only sometime (0.5 chance that nothing will happen)
+         // Make the spheres flicker when no one's around
+         // Flicker only sometimes (0.5 chance that nothing will happen)
          this.alpha += p.map(p.random(), 0.5, 1, ALPHA_INCREASE_MIN, ALPHA_INCREASE_MAX);
-         // decrease slower
+         // Decrease slower
          this.alpha *= ALPHA_DECREASE_SLOW;
       } else {
-         // decrease faster
+         // Decrease faster
          this.alpha *= ALPHA_DECREASE_FAST;
       }
-      // add movement to the alpha
+      // Add movement to the alpha
       this.alpha += flowVec.magSq() * ALPHA_FLOW_MULTIPLIER;
-
-      // add the flow to the direction
+   
+      // Add the flow to the direction
       // if (flowVec.magSq() > 10) this.direction.add(flowVec.copy().mult(DIRECTION_FLOW_MULTIPLIER)).normalize();
       let speed = this.moveSpeed;
-      // affect the speed by the flow
+      // Affect the speed by the flow
       speed *= Math.max(flowVec.magSq() / FLOW_SPEED_DIVISOR, 1);
       // Move sphere
       const velocity = this.direction.copy().mult(speed);
       this.position.add(velocity);
-
-      // Wrap around edges (hide behind offset to prevent popping)
+   
       const offset = this.size + EDGE_WRAP_OFFSET;
-      if (this.position.x + offset < 0) this.position.x = p.width + offset;
-      if (this.position.x - offset > p.width) this.position.x = - offset;
-      if (this.position.y + offset < 0) this.position.y = p.height + offset;
-      if (this.position.y - offset > p.height) this.position.y = - offset;
+   
+      if (shouldBounce) {
+         // Bounce off edges
+         if (this.position.x - this.size < 0 || this.position.x + this.size > p.width) {
+            this.direction.x *= -1;
+         }
+         if (this.position.y - this.size < 0 || this.position.y + this.size > p.height) {
+            this.direction.y *= -1;
+         }
+      } else {
+         // Wrap around edges (hide behind offset to prevent popping)
+         if (this.position.x + offset < 0) this.position.x = p.width + offset;
+         if (this.position.x - offset > p.width) this.position.x = -offset;
+         if (this.position.y + offset < 0) this.position.y = p.height + offset;
+         if (this.position.y - offset > p.height) this.position.y = -offset;
+      }
    }
+   
 
    public draw() {
       const p = this.p;

@@ -10,7 +10,7 @@ const OFFSET_REDUCTION_SPEED = 0.8;
 // Determines the ratio for circle size based on offset magnitude
 const CIRCLE_SIZE_OFFSET_VECTOR_RATIO = 3;
 
-export class Circle {
+export class GridCell {
    // How much is it moved in the grid -- affects the scaling as well
    public offset: Vector = new Vector();
 
