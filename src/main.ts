@@ -23,7 +23,7 @@ const CAMERA_Y_RESOLUTION = 480;
 //      if something just happened make the threshold high (map between two thresolds based on time)
 const GLOBAL_MOVEMENT_THRESHOLD_MULTIPLIER = 0.003;
 // Cooldown for movement-triggered events.
-const SECONDS_TO_NEXT_GLOBAL_MOVE_EVENT = 5;
+const SECONDS_TO_NEXT_GLOBAL_MOVE_EVENT = 3;
 
 // Visuals
 // Background fade effect.

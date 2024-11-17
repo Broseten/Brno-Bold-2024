@@ -9,10 +9,10 @@ const SENSITIVITY = 1.8;
 // Determines how quickly the offset shrinks each frame
 const OFFSET_REDUCTION_SPEED = 0.8;
 // Determines the circle/square size based on offset magnitude
-const ELEMENT_SIZE_MULTIPLIER = 8;
+const ELEMENT_SIZE_MULTIPLIER = 9;
 const TEXT_SIZE_MULTIPLIER = 2.5;
-const SQUARE_ROTATION_MULTIPLIER = 0.02;
-const CIRCLESQUARE_ROTATION_MULTIPLIER = 0.005;
+const SQUARE_ROTATION_MULTIPLIER = 0.03;
+const CIRCLESQUARE_ROTATION_MULTIPLIER = 0.006;
 
 export enum GridCellMode {
    Circle,
