@@ -3,6 +3,7 @@ import '../css/style.css';
 import { FlowCalculator, copyImage, same } from './flow';
 import { Grid } from './grid';
 import { Sphere } from './sphere';
+import { GridCellMode } from './grid_cell';
 
 /// Parameters
 // TODO: Add settings/parameters to a menu displayed on button press.
@@ -20,7 +21,7 @@ const CAMERA_Y_RESOLUTION = 480;
 // TODO adjust the thershold (add another multiplier?) according to the time?
 //      If nothing happend for more then a few minutes, than make the threshold really low
 //      if something just happened make the threshold high (map between two thresolds based on time)
-const GLOBAL_MOVEMENT_THRESHOLD_MULTIPLIER = 0.0035;
+const GLOBAL_MOVEMENT_THRESHOLD_MULTIPLIER = 0.003;
 // Cooldown for movement-triggered events.
 const SECONDS_TO_NEXT_GLOBAL_MOVE_EVENT = 5;
 
@@ -54,8 +55,19 @@ const SPHERE_SIZE_CHANGE_SPEED_MAX = 0.5;
 // IF true, spheres bounce of the edges. False, the wrap around.
 const SPHERE_BOUNCE = true;
 
+const allowedModes = [
+   GridCellMode.Circle,
+   GridCellMode.SquareSquare,
+   GridCellMode.Letter,
+   GridCellMode.Square,
+   GridCellMode.SquareCircle,
+   GridCellMode.RotatingSquare,
+   GridCellMode.SquareSquareInverse
+];
 
 /// Data variables
+
+let gridMode = GridCellMode.Circle;
 
 let blackColor: p5.Color;
 let redColor: p5.Color;
@@ -93,13 +105,18 @@ const sketch = (p: p5) => {
       screenBuffer = p.createGraphics(p.width, p.height);
       textBuffer = p.createGraphics(p.width, p.height);
 
+      // TODO use loaded font instead of a default websafe font
+      // (screenBuffer as any).textFont("Courier New");
+      (screenBuffer as any).textFont("Verdana");
+      (screenBuffer as any).textStyle(p.BOLD);
+
       startCapture();
 
       // Set up flow calculator.
       flow = new FlowCalculator(SAMPLING_GRID_SIZE);
 
       // Set up the grid of circles.
-      grid = new Grid(0, 0, screenBuffer.width, screenBuffer.height, GRID_SPACING);
+      grid = new Grid(p, 0, 0, screenBuffer.width, screenBuffer.height, GRID_SPACING);
 
       // Initialize spheres.
       for (let i = 0; i < SPHERE_COUNT; i++) {
@@ -134,15 +151,22 @@ const sketch = (p: p5) => {
          return;
       }
 
-      let [c1, c2] = changeColorScheme();
+      let [backgroundColor, mainColor] = changeColorScheme();
 
-      (screenBuffer as any).background(p.red(c1), p.green(c1), p.blue(c1), BACKGROUND_ALPHA);
+      let ba = BACKGROUND_ALPHA;
+      if (gridMode === GridCellMode.Letter || gridMode === GridCellMode.SquareCircle) {
+         ba = BACKGROUND_ALPHA * 10;
+      }
+      (screenBuffer as any).background(
+         p.red(backgroundColor),
+         p.green(backgroundColor),
+         p.blue(backgroundColor),
+         ba
+      );
 
       flowGrid();
 
-      (screenBuffer as any).noStroke();
-      (screenBuffer as any).fill(c2);
-      grid.draw(screenBuffer);
+      grid.draw(gridMode, backgroundColor, mainColor, screenBuffer);
 
       p.push();
       // Translate to correct position - WEBGL or not, we need some translation.
@@ -175,12 +199,13 @@ const sketch = (p: p5) => {
    p.windowResized = () => {
       p.resizeCanvas(p.windowWidth, p.windowHeight);
       // Reset the grid.
-      grid = new Grid(0, 0, screenBuffer.width, screenBuffer.height, GRID_SPACING);
+      grid = new Grid(p, 0, 0, screenBuffer.width, screenBuffer.height, GRID_SPACING);
    };
 
    p.keyReleased = () => {
       if (p.key === 'd') debug = !debug;
-      else if (p.key === ' ') switchColors();
+      else if (p.key === 'c') switchColors();
+      else if (p.key === ' ') switchMode();
       else if (p.key === 'r') p.setup();
       else if (p.key == 'p') {
          if (paused) {
@@ -221,7 +246,7 @@ const sketch = (p: p5) => {
          }
 
          if (flow.zones && flow.zones[0]) {
-            globalMovement = grid.update(p, flow.zones);
+            globalMovement = grid.update(flow.zones);
             checkGlobalFlowEvent();
          }
 
@@ -252,11 +277,23 @@ const sketch = (p: p5) => {
    }
 
    function globalMovementThresholdExceeded() {
+      // will randomize the original array...whatever
+      allowedModes.sort(() => p.random());
+      nextGridCellMode();
       switchColors();
+   }
+
+   function switchMode() {
+      nextGridCellMode();
    }
 
    function switchColors() {
       colorScheme = (colorScheme + 1) % 2;
+   }
+
+   function nextGridCellMode() {
+      allowedModes.push(gridMode);
+      gridMode = allowedModes.shift()!;
    }
 };
 

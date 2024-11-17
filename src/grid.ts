@@ -1,5 +1,5 @@
 import p5 from "p5";
-import { GridCell } from "./grid_cell";
+import { GridCell, GridCellMode } from "./grid_cell";
 import { FlowZone } from "./flow";
 
 export class Grid {
@@ -7,6 +7,7 @@ export class Grid {
    gridCells: GridCell[][] = [];
 
    constructor(
+      public p: p5,
       public x: number,
       public y: number,
       public width: number,
@@ -21,13 +22,13 @@ export class Grid {
          this.gridCells[row] = [];
          for (let col = 0; col < cols; col++) {
             let relX = gridCellSize / 2 + col * gridCellSize;
-            this.gridCells[row][col] = new GridCell(new p5.Vector(relX, relY));
+            this.gridCells[row][col] = new GridCell(this, new p5.Vector(relX, relY));
          }
       }
    }
 
    // Returns the global movement -- that is the total sum of magnitudes of all flows in the image
-   public update(p: p5, flowZones: FlowZone[][]): number {
+   public update(flowZones: FlowZone[][]): number {
       let globalMovement = 0;
 
       // Dimensions of the flow zone grid
@@ -37,8 +38,8 @@ export class Grid {
       this.gridCells.forEach((row) => {
          row.forEach((cell) => {
             // Map grid position to flow zone indices
-            let mappedX = p.map(cell.position.x, 0, this.width, 0, flowZoneCols);
-            let mappedY = p.map(cell.position.y, 0, this.height, 0, flowZoneRows);
+            let mappedX = this.p.map(cell.position.x, 0, this.width, 0, flowZoneCols);
+            let mappedY = this.p.map(cell.position.y, 0, this.height, 0, flowZoneRows);
 
             // Indices for the four surrounding zones
             let zoneColLeft = Math.floor(mappedX);
@@ -51,13 +52,13 @@ export class Grid {
             let yFraction = mappedY - zoneRowTop;
 
             // Neighboring FlowZones, ensuring they exist
-            const topLeft = flowZones[zoneRowTop]?.[zoneColLeft]?.movement ?? p.createVector(0, 0);
-            const topRight = flowZones[zoneRowTop]?.[zoneColRight]?.movement ?? p.createVector(0, 0);
-            const bottomLeft = flowZones[zoneRowBottom]?.[zoneColLeft]?.movement ?? p.createVector(0, 0);
-            const bottomRight = flowZones[zoneRowBottom]?.[zoneColRight]?.movement ?? p.createVector(0, 0);
+            const topLeft = flowZones[zoneRowTop]?.[zoneColLeft]?.movement ?? this.p.createVector(0, 0);
+            const topRight = flowZones[zoneRowTop]?.[zoneColRight]?.movement ?? this.p.createVector(0, 0);
+            const bottomLeft = flowZones[zoneRowBottom]?.[zoneColLeft]?.movement ?? this.p.createVector(0, 0);
+            const bottomRight = flowZones[zoneRowBottom]?.[zoneColRight]?.movement ?? this.p.createVector(0, 0);
 
             // Bilinear interpolation
-            const interpolatedOffset = p.createVector(
+            const interpolatedOffset = this.p.createVector(
                (1 - xFraction) * (1 - yFraction) * topLeft.x +
                xFraction * (1 - yFraction) * topRight.x +
                (1 - xFraction) * yFraction * bottomLeft.x +
@@ -78,14 +79,14 @@ export class Grid {
    }
 
 
-   public draw(b: p5.Graphics): void {
-      (b as any).push();
-      (b as any).translate(this.x, this.y);
+   public draw(mode: GridCellMode, backgroundColor: p5.Color, mainColor: p5.Color, canvas: p5.Graphics): void {
+      (canvas as any).push();
+      (canvas as any).translate(this.x, this.y);
       this.gridCells.forEach((row) => {
          row.forEach((circle) => {
-            circle.draw(b);
+            circle.draw(mode, backgroundColor, mainColor, canvas);
          });
       });
-      (b as any).pop();
+      (canvas as any).pop();
    }
 }
