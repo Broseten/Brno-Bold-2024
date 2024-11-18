@@ -111,7 +111,8 @@ const sketch = (p: p5) => {
 
    // Load the font in the preload function
    p.preload = () => {
-      boldFont = p.loadFont('/assets/fonts/BrnoBold.otf');
+      // use the base path since we are deplying to pages under subdir with the repo name
+      boldFont = p.loadFont(`${import.meta.env.BASE_URL}/assets/fonts/BrnoBold.otf`);
    };
 
    p.setup = () => {
