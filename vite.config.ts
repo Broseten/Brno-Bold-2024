@@ -1,7 +1,7 @@
 import { defineConfig } from 'vite';
 
 export default defineConfig({
-    base: 'Brno-Bold-2024', // Repository name
+    base: '/',
     build: {
         outDir: 'dist',
         // "esbuild" or "terser" for minification; "esbuild" is faster.

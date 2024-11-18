@@ -105,7 +105,15 @@ let spheresInverseAlpha = false;
 
 let settingsVisible = false;
 
+let boldFont: p5.Font;
+
 const sketch = (p: p5) => {
+
+   // Load the font in the preload function
+   p.preload = () => {
+      boldFont = p.loadFont('/assets/fonts/BrnoBold.otf');
+   };
+
    p.setup = () => {
       initCookiesValue();
       setupSettingsModal();
@@ -115,9 +123,7 @@ const sketch = (p: p5) => {
       screenBuffer = p.createGraphics(p.width, p.height);
       textBuffer = p.createGraphics(p.width, p.height);
 
-      // TODO use loaded font instead of a default websafe font
-      // (screenBuffer as any).textFont("Courier New");
-      (screenBuffer as any).textFont("Verdana");
+      (screenBuffer as any).textFont(boldFont);
       (screenBuffer as any).textStyle(p.BOLD);
 
       startCapture();
